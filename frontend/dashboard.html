@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fraud Detection Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --input-bg: rgba(15, 23, 42, 0.6);
+      --input-border: rgba(255, 255, 255, 0.15);
+      --input-focus: #6366f1;
+      --success-bg: rgba(16, 185, 129, 0.2);
+      --success-text: #34d399;
+      --warning-bg: rgba(245, 158, 11, 0.2);
+      --warning-text: #fbbf24;
+      --danger-bg: rgba(239, 68, 68, 0.2);
+      --danger-text: #f87171;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Glassmorphism utilities */
+    .glass {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    header {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      background: linear-gradient(to right, #818cf8, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.025em;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 3rem 2rem;
+      gap: 3rem;
+      flex: 1;
+    }
+
+    .card {
+      border-radius: 16px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      animation: slideUp 0.6s ease-out forwards;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    .card:nth-child(2) {
+      animation-delay: 0.1s;
+      max-width: 550px;
+    }
+
+    @keyframes slideUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card h2 {
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: var(--text-main);
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 1rem;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .input-group label {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 0.875rem 1rem;
+      font-size: 1rem;
+      font-family: inherit;
+      color: var(--text-main);
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      outline: none;
+    }
+
+    input::placeholder { color: #475569; }
+
+    input:focus {
+      border-color: var(--input-focus);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    button {
+      background: var(--primary);
+      color: white;
+      font-weight: 600;
+      font-size: 1rem;
+      padding: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 0.5rem;
+    }
+
+    button:hover {
+      background: var(--primary-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+
+    .result-container {
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .result {
+      font-weight: 600;
+      padding: 1rem;
+      text-align: center;
+      border-radius: 8px;
+      font-size: 1.125rem;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .result.show { opacity: 1; }
+
+    .approve { background: var(--success-bg); color: var(--success-text); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .review  { background: var(--warning-bg); color: var(--warning-text); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .block   { background: var(--danger-bg); color: var(--danger-text); border: 1px solid rgba(239, 68, 68, 0.3); }
+    
+    .scores-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .score-box {
+      background: rgba(15, 23, 42, 0.4);
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      transition: transform 0.3s ease;
+    }
+    
+    .score-box:hover {
+      transform: translateY(-2px);
+      background: rgba(15, 23, 42, 0.6);
+    }
+
+    .score-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .score-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .final-score {
+      grid-column: 1 / -1;
+      background: rgba(99, 102, 241, 0.1);
+      border-color: rgba(99, 102, 241, 0.2);
+    }
+
+    .final-score .score-value {
+      color: #818cf8;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-top: 0.5rem;
+    }
+
+    th, td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    th {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    td {
+      font-size: 0.875rem;
+    }
+    
+    tbody tr {
+      transition: background 0.2s ease;
+    }
+
+    tbody tr:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .badge.approve { background: var(--success-bg); color: var(--success-text); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge.review { background: var(--warning-bg); color: var(--warning-text); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge.block { background: var(--danger-bg); color: var(--danger-text); border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-gradient); }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+
+  </style>
+</head>
+<body>
+  <header class="glass">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M2 17L12 22L22 17" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M2 12L12 17L22 12" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <h1>Fraud Detection Engine</h1>
+  </header>
+  
+  <div class="container">
+    <!-- Input Form -->
+    <div class="card glass">
+      <h2>Analyze Transaction</h2>
+      
+      <div class="input-group">
+        <label for="transaction_id">Transaction ID</label>
+        <input type="text" id="transaction_id" placeholder="e.g. TXN-982374">
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="input-group">
+          <label for="card1">Phone Number (Last 4)</label>
+          <input type="number" id="card1" placeholder="e.g. 4242">
+        </div>
+        <div class="input-group">
+          <label for="addr1">Billing Address ID</label>
+          <input type="number" id="addr1" placeholder="e.g. 10045">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="input-group">
+          <label for="amount">Amount (RM)</label>
+          <input type="number" step="0.01" id="amount" placeholder="0.00">
+        </div>
+        <div class="input-group">
+          <label for="time_hour">Hour of Day</label>
+          <input type="number" id="time_hour" placeholder="0 - 23" min="0" max="23">
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label for="device_id">Device Identifier</label>
+        <input type="text" id="device_id" placeholder="Device MAC or Hash">
+      </div>
+
+      <button onclick="analyze()">Analyze Risk</button>
+
+      <!-- Result Display -->
+      <div class="result-container">
+        <div id="result" class="result">Ready for analysis</div>
+        <div class="scores-grid">
+          <div class="score-box">
+            <span class="score-label">ML Score</span>
+            <span class="score-value" id="ml_score">0.00</span>
+          </div>
+          <div class="score-box">
+            <span class="score-label">Graph Score</span>
+            <span class="score-value" id="graph_score">0.00</span>
+          </div>
+          <div class="score-box final-score">
+            <span class="score-label">Aggregated Risk Factor</span>
+            <span class="score-value" id="final_score">0.00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transaction History -->
+    <div class="card glass">
+      <h2>Recent Inquiries</h2>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Entity ID</th>
+              <th>System Decision</th>
+              <th>Risk Score</th>
+            </tr>
+          </thead>
+          <tbody id="history">
+            <tr id="empty-state">
+              <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 2rem;">No recent transactions analyzed.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const historyTable = document.getElementById('history');
+
+    async function analyze() {
+      const resultDiv = document.getElementById('result');
+      const mlSpan = document.getElementById('ml_score');
+      const graphSpan = document.getElementById('graph_score');
+      const finalSpan = document.getElementById('final_score');
+
+      // 1. Grab raw values
+      const rawTxId = document.getElementById('transaction_id').value.trim();
+      const rawCard = document.getElementById('card1').value;
+      const rawAddr = document.getElementById('addr1').value;
+      const rawAmount = document.getElementById('amount').value;
+      const rawTime = document.getElementById('time_hour').value;
+      const rawDevice = document.getElementById('device_id').value.trim();
+
+      // 2. Validate
+      if (!rawTxId || !rawCard || !rawAddr || !rawAmount || !rawTime || !rawDevice) {
+          resultDiv.textContent = 'Validation Error: Missing fields';
+          resultDiv.className = 'result block show';
+          return;
+      }
+
+      resultDiv.textContent = 'Processing request...';
+      resultDiv.className = 'result show';
+      resultDiv.style.opacity = '0.7';
+
+      const payload = {
+          transaction_id: rawTxId,
+          card1: parseInt(rawCard),
+          addr1: parseInt(rawAddr),
+          amount: parseFloat(rawAmount),
+          time_hour: parseInt(rawTime),
+          device_id: rawDevice
+      };
+      
+      try {
+        const response = await fetch('http://127.0.0.1:8000/v1/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error('API Error');
+        const data = await response.json();
+
+        resultDiv.style.opacity = '1';
+        resultDiv.textContent = `Decision: ${data.decision}`;
+        resultDiv.className = 'result show ' + data.decision.toLowerCase();
+        
+        // Ensure values exist before calling toFixed
+        const behScore = parseFloat(data.model_signals?.behavioral || 0);
+        const netScore = parseFloat(data.model_signals?.network || 0);
+        const finScore = parseFloat(data.final_score || 0);
+
+        mlSpan.textContent = behScore.toFixed(2);
+        graphSpan.textContent = netScore.toFixed(2);
+        finalSpan.textContent = finScore.toFixed(2);
+
+        // Remove placeholder if it exists
+        const emptyState = document.getElementById('empty-state');
+        if (emptyState) {
+          emptyState.remove();
+        }
+
+        const row = document.createElement('tr');
+        const decisionClass = data.decision.toLowerCase();
+        row.innerHTML = `
+          <td style="font-family: monospace;">${data.transaction_id}</td>
+          <td><span class="badge ${decisionClass}">${data.decision}</span></td>
+          <td><strong>${finScore.toFixed(2)}</strong></td>
+        `;
+        
+        // Add subtle highlight animation for new row
+        row.style.background = 'rgba(99, 102, 241, 0.2)';
+        
+        historyTable.prepend(row);
+        
+        setTimeout(() => {
+           row.style.background = 'transparent';
+        }, 1000);
+
+      } catch (err) {
+        resultDiv.style.opacity = '1';
+        resultDiv.textContent = 'Service Unavailable';
+        resultDiv.className = 'result block show';
+        console.error(err);
+      }
+    }
+  </script>
+</body>
+</html>
